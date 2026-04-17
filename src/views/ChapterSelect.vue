@@ -152,7 +152,7 @@
   }
 
   function startChapter(chapter: any) {
-    gameStore.startChapter(chapter.id)
+    gameStore.startChapter(chapter.id, chapter.startNodeId)
     router.push('/game')
   }
 
@@ -165,7 +165,7 @@
   })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
   .chapter-select {
     min-height: 100vh;
     background: #0a0a0f;

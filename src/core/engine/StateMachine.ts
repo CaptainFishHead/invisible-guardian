@@ -89,10 +89,17 @@ export class StateMachine {
   // 获取有效转换
   private getValidTransitions(): GamePhase[] {
     const transitions: Record<GamePhase, GamePhase[]> = {
-      [GamePhase.BOOT]: [GamePhase.MAIN_MENU],
+      [GamePhase.BOOT]: [GamePhase.MAIN_MENU, GamePhase.CHAPTER_SELECT, GamePhase.LOADING],
       [GamePhase.MAIN_MENU]: [GamePhase.CHAPTER_SELECT, GamePhase.PLAYING, GamePhase.LOADING],
       [GamePhase.CHAPTER_SELECT]: [GamePhase.MAIN_MENU, GamePhase.LOADING],
-      [GamePhase.LOADING]: [GamePhase.PLAYING, GamePhase.MAIN_MENU],
+      [GamePhase.LOADING]: [
+        GamePhase.PLAYING,
+        GamePhase.DIALOGUE,
+        GamePhase.CHOICE,
+        GamePhase.ANIMATION,
+        GamePhase.ENDING,
+        GamePhase.MAIN_MENU
+      ],
       [GamePhase.PLAYING]: [GamePhase.PAUSED, GamePhase.DIALOGUE, GamePhase.CHOICE, GamePhase.ANIMATION, GamePhase.ENDING],
       [GamePhase.PAUSED]: [GamePhase.PLAYING, GamePhase.MAIN_MENU],
       [GamePhase.DIALOGUE]: [GamePhase.PLAYING, GamePhase.CHOICE, GamePhase.ANIMATION, GamePhase.ENDING],
@@ -145,6 +152,12 @@ export class StateMachine {
 
   setAttribute(key: keyof CharacterAttributes, value: number): void {
     this.state.value.attributes[key] = Math.max(0, Math.min(100, value));
+  }
+
+  setCurrentProgress(chapterId: string, nodeId: string): void {
+    this.state.value.currentChapter = chapterId;
+    this.state.value.currentNode = nodeId;
+    this.state.value.currentChapterStartTime = Date.now();
   }
 
   // 标记操作

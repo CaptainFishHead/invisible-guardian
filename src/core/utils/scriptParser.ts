@@ -237,7 +237,7 @@ export class ScriptParser {
       chapter: {
         ...chapter,
         nodes: undefined as any,
-        nodesArray: Array.from(chapter.nodes.entries()).map(([id, node]) => ({ id, ...node }))
+        nodesArray: Array.from(chapter.nodes.values()).map(node => ({ ...node }))
       } as any,
       metadata: {
         version: '1.0.0',

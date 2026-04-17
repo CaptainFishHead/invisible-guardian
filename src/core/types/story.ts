@@ -214,3 +214,34 @@ export interface ChapterData {
     updatedAt: string;
   };
 }
+
+// 流程图节点
+export interface FlowchartNode {
+  id: string;
+  type: 'start' | 'scene' | 'choice' | 'ending';
+  title: string;
+  subtitle?: string;
+  description?: string;
+  image?: string;
+  x: number;
+  y: number;
+  choices?: Array<{
+    text: string;
+    selected: boolean;
+    effect?: string;
+  }>;
+  tags?: Array<{
+    text: string;
+    type: 'good' | 'bad' | 'hidden' | 'normal';
+  }>;
+  endingType?: 'good' | 'bad' | 'normal' | 'secret' | 'current';
+}
+
+//
+export interface NodeConnection {
+  from: string;
+  to: string;
+  type: 'default' | 'active' | 'current';
+  label?: string;
+  condition?: string;
+}

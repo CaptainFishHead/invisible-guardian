@@ -1,14 +1,13 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, markRaw } from 'vue';
 import type { GameState, CharacterAttributes, HistoryEntry, GameSettings } from '@/core/types/game';
-import { DEFAULT_ATTRIBUTES } from '@/core/types/game';
 import type { Condition, Effect } from '@/core/types/story';
 import { ConditionType, Operator, EffectType } from '@/core/types/story';
 import { StateMachine, GamePhase } from '@/core/engine/StateMachine';
 
 export const useGameStore = defineStore('game', () => {
   // 状态机实例
-  const stateMachine = new StateMachine();
+  const stateMachine = markRaw(new StateMachine());
 
   // 当前游戏状态（响应式包装）
   let _phase = ref<GamePhase>(GamePhase.BOOT)
@@ -45,6 +44,8 @@ export const useGameStore = defineStore('game', () => {
   const items = computed(() => _gameState.value.items);
   const history = computed(() => _gameState.value.history);
   const currentChapter = computed(() => _gameState.value.currentChapter);
+  const currentNode = computed(() => _gameState.value.currentNode);
+  const deathCount = computed(() => _gameState.value.deathCount);
   const isNewGamePlus = computed(() => _gameState.value.newGamePlus);
 
   const canSeeHiddenInfo = computed(() =>
@@ -223,11 +224,14 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function startChapter(chapterId: string, nodeId?: string) {
-    _gameState.value.currentChapter = chapterId;
-    _gameState.value.currentNode = nodeId || 'start';
-    _gameState.value.currentChapterStartTime = Date.now();
+    stateMachine.setCurrentProgress(chapterId, nodeId || '');
     currentDialogueIndex.value = 0;
-    stateMachine.transition(GamePhase.PLAYING);
+    stateMachine.transition(GamePhase.LOADING);
+    syncState()
+  }
+
+  function updateCurrentProgress(chapterId: string, nodeId: string) {
+    stateMachine.setCurrentProgress(chapterId, nodeId);
     syncState()
   }
 
@@ -295,6 +299,8 @@ export const useGameStore = defineStore('game', () => {
     items,
     history,
     currentChapter,
+    currentNode,
+    deathCount,
     isNewGamePlus,
     canSeeHiddenInfo,
     textDisplaySpeed,
@@ -318,6 +324,7 @@ export const useGameStore = defineStore('game', () => {
     setTextComplete,
     startNewGame,
     startChapter,
+    updateCurrentProgress,
     resetCurrentChapter,
     recordDeath,
     unlockChapter,

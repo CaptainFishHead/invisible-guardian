@@ -31,155 +31,184 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useGameStore } from '@/stores/gameStore';
+  import { ref, computed } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useGameStore } from '@/stores/gameStore'
 
-const router = useRouter();
-const gameStore = useGameStore();
+  const router = useRouter()
+  const gameStore = useGameStore()
 
-const endingType = ref<'good' | 'bad' | 'hidden' | 'true'>('good');
-const endingTitle = ref('新的起点');
-const endingSubtitle = ref('这只是开始，更大的挑战还在前方...');
-const endingCG = ref('/images/cg/ch1_clear.jpg');
-const showStats = ref(true);
+  const endingType = ref<'good' | 'bad' | 'hidden' | 'true'>('good')
+  const endingTitle = ref('新的起点')
+  const endingSubtitle = ref('这只是开始，更大的挑战还在前方...')
+  const endingCG = ref('/images/cg/ch1_clear.jpg')
+  const showStats = ref(true)
 
-const canContinue = computed(() => endingType.value !== 'bad');
+  const canContinue = computed(() => endingType.value !== 'bad')
 
-const stats = computed(() => {
-  const s = gameStore.getStats();
-  return {
-    deathCount: s.deathCount,
-    playTime: formatTime(s.totalPlayTime),
-    completion: s.completionRate
-  };
-});
+  const stats = computed(() => {
+    const s = gameStore.getStats()
+    return {
+      deathCount: s.deathCount,
+      playTime: formatTime(s.totalPlayTime),
+      completion: s.completionRate
+    }
+  })
 
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  return hours > 0 ? `${hours}小时` : `${Math.floor(seconds / 60)}分钟`;
-}
+  function formatTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600)
+    return hours > 0 ? `${hours}小时` : `${Math.floor(seconds / 60)}分钟`
+  }
 
-function continueGame() {
-  router.push('/chapters');
-}
+  function continueGame() {
+    router.push('/chapters')
+  }
 
-function returnToMenu() {
-  router.push('/');
-}
+  function returnToMenu() {
+    router.push('/')
+  }
 
-function viewFlowchart() {
-  // 打开流程图
-}
+  function viewFlowchart() {
+    // 构建查询参数
+    const query: Record<string, string> = {
+      // chapter: currentChapterId.value,
+      ending: endingType.value
+    }
+    console.log(query)
+
+    // 如果有当前节点ID，也传递过去用于高亮当前路径
+    // if (currentNodeId.value) {
+    //   query.node = currentNodeId.value
+    // }
+
+    // 跳转到流程图页面
+    router.push({ name: 'Flowchart', query })
+
+    // 可选：记录用户查看流程图的行为
+    // gameStore.recordAnalytics('view_flowchart', {
+    //   chapterId: currentChapterId.value,
+    //   endingType: endingType.value,
+    //   nodeId: currentNodeId.value,
+    //   timestamp: Date.now()
+    // });
+  }
 </script>
 
-<style scoped>
-.ending-view {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  text-align: center;
-}
+<style scoped lang="scss">
+  .ending-view {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+  }
 
-.ending-bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  filter: blur(5px) brightness(0.4);
-  z-index: 0;
-}
+  .ending-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: blur(5px) brightness(0.4);
+    z-index: 0;
+  }
 
-.ending-content {
-  position: relative;
-  z-index: 1;
-  max-width: 600px;
-  padding: 40px;
-}
+  .ending-content {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    padding: 40px;
+  }
 
-.ending-title {
-  font-size: 48px;
-  font-weight: 300;
-  letter-spacing: 8px;
-  margin-bottom: 16px;
-  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-}
+  .ending-title {
+    font-size: 48px;
+    font-weight: 300;
+    letter-spacing: 8px;
+    margin-bottom: 16px;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
 
-.ending-view.good .ending-title { color: #27ae60; }
-.ending-view.bad .ending-title { color: #e74c3c; }
-.ending-view.hidden .ending-title { color: #9b59b6; }
-.ending-view.true .ending-title { color: #f1c40f; }
+  .ending-view.good .ending-title {
+    color: #27ae60;
+  }
+  .ending-view.bad .ending-title {
+    color: #e74c3c;
+  }
+  .ending-view.hidden .ending-title {
+    color: #9b59b6;
+  }
+  .ending-view.true .ending-title {
+    color: #f1c40f;
+  }
 
-.ending-subtitle {
-  font-size: 18px;
-  color: rgba(255,255,255,0.8);
-  margin-bottom: 40px;
-  line-height: 1.6;
-}
+  .ending-subtitle {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
 
-.ending-stats {
-  display: flex;
-  justify-content: center;
-  gap: 60px;
-  margin-bottom: 40px;
-  padding: 30px;
-  background: rgba(0,0,0,0.5);
-  border-radius: 12px;
-}
+  .ending-stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-bottom: 40px;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+  }
 
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
-.stat-value {
-  font-size: 36px;
-  font-weight: 300;
-  color: #fff;
-}
+  .stat-value {
+    font-size: 36px;
+    font-weight: 300;
+    color: #fff;
+  }
 
-.stat-label {
-  font-size: 14px;
-  color: rgba(255,255,255,0.6);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
+  .stat-label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
 
-.ending-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-}
+  .ending-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
 
-.ending-actions button {
-  min-width: 200px;
-  padding: 16px 32px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
+  .ending-actions button {
+    min-width: 200px;
+    padding: 16px 32px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
 
-.ending-actions button:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: #fff;
-  transform: translateY(-2px);
-}
+  .ending-actions button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    transform: translateY(-2px);
+  }
 
-.ending-actions button:first-child {
-  background: rgba(231, 76, 60, 0.2);
-  border-color: #e74c3c;
-}
+  .ending-actions button:first-child {
+    background: rgba(231, 76, 60, 0.2);
+    border-color: #e74c3c;
+  }
 
-.ending-actions button:first-child:hover {
-  background: rgba(231, 76, 60, 0.4);
-}
+  .ending-actions button:first-child:hover {
+    background: rgba(231, 76, 60, 0.4);
+  }
 </style>

@@ -1,14 +1,8 @@
 <template>
-  <div
-    class="game-view"
-    :class="[gameStore.phase, { 'hide-ui': hideUI }]"
-    @mousemove="onMouseMove"
-  >
-    <!-- 背景层 -->
+  <div class="game-view" :class="[gameStore.phase, { 'hide-ui': hideUI }]" @mousemove="onMouseMove">
     <div class="layer-background">
       <VideoPlayer
         v-if="currentNode?.type === 'video' && currentNode.video"
-        ref="videoPlayer"
         :src="currentNode.video.src"
         :start-time="currentNode.video.startTime"
         :end-time="currentNode.video.endTime"
@@ -19,14 +13,9 @@
         @pause-point="onVideoPause"
         @skip="skipVideo"
       />
-      <img
-        v-else-if="currentNode?.background"
-        :src="currentNode.background"
-        class="bg-image"
-      />
+      <img v-else-if="currentNode?.background" :src="currentNode.background" class="bg-image" />
     </div>
 
-    <!-- 角色层 -->
     <div class="layer-characters">
       <TransitionGroup name="character">
         <div
@@ -37,6 +26,7 @@
           :style="getCharacterStyle(dialogue)"
         >
           <img
+            v-if="getCharacterImage(dialogue.speaker, dialogue.emotion)"
             :src="getCharacterImage(dialogue.speaker, dialogue.emotion)"
             :alt="dialogue.speaker"
           />
@@ -44,38 +34,28 @@
       </TransitionGroup>
     </div>
 
-    <!-- 特效层 -->
-    <div class="layer-effects">
-      <!-- 血迹、闪光等特效 -->
-    </div>
+    <div class="layer-effects"></div>
 
-    <!-- UI层 -->
     <div v-show="!hideUI" class="layer-ui">
-      <!-- 顶部栏 -->
       <header class="top-bar">
         <div class="left-group">
-          <button class="icon-btn" @click="showMenu = true">☰</button>
+          <button class="icon-btn" @click="showMenu = true">Menu</button>
           <button class="icon-btn" @click="gameStore.isSkipping = !gameStore.isSkipping">
-            {{ gameStore.isSkipping ? '⏹' : '⏩' }}
+            {{ gameStore.isSkipping ? 'Skip On' : 'Skip Off' }}
           </button>
         </div>
 
         <div class="chapter-info">
-          <span class="chapter-name">{{ currentChapter?.title }}</span>
+          <span class="chapter-name">{{ currentChapter?.title || gameStore.currentChapter }}</span>
         </div>
 
         <div class="right-group">
-          <button class="icon-btn" @click="showStatus = true">📊</button>
-          <button class="icon-btn" @click="showHistory = true">↩</button>
+          <button class="icon-btn" @click="showStatus = true">State</button>
+          <button class="icon-btn" @click="showHistory = true">History</button>
         </div>
       </header>
 
-      <!-- 对话区域 -->
-      <div
-        v-if="currentNode?.dialogue"
-        class="dialogue-container"
-        @click="onDialogueClick"
-      >
+      <div v-if="currentNode?.dialogue" class="dialogue-container" @click="onDialogueClick">
         <div class="dialogue-box">
           <div class="speaker-name" :style="{ color: getSpeakerColor(currentSpeaker) }">
             {{ currentSpeaker }}
@@ -91,11 +71,10 @@
             />
           </div>
 
-          <div v-if="textComplete" class="continue-indicator">▼</div>
+          <div v-if="textComplete" class="continue-indicator">Continue</div>
         </div>
       </div>
 
-      <!-- 分支选择 -->
       <ChoiceOverlay
         v-if="showChoices"
         :choices="availableChoices"
@@ -105,7 +84,6 @@
         @timeout="onChoiceTimeout"
       />
 
-      <!-- 调查模式 -->
       <div v-if="currentNode?.type === 'investigation'" class="investigation-mode">
         <div
           v-for="point in currentNode.investigation?.points"
@@ -119,7 +97,6 @@
         </div>
       </div>
 
-      <!-- QTE提示 -->
       <div v-if="showQTE" class="qte-overlay">
         <div class="qte-prompt">
           <span class="qte-key">{{ currentNode?.qte?.key }}</span>
@@ -130,537 +107,597 @@
       </div>
     </div>
 
-    <!-- 菜单弹窗 -->
     <GameMenu v-model:visible="showMenu" />
-
-    <!-- 状态面板 -->
     <StatusPanel v-model="showStatus" />
-
-    <!-- 历史回溯 -->
-    <HistoryTimeline
-      v-model="showHistory"
-      @jump="onHistoryJump"
-    />
+    <HistoryTimeline v-model="showHistory" @jump="onHistoryJump" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { storeToRefs } from 'pinia';
-import { useGameStore } from '@/stores/gameStore';
-import { useProgressStore } from '@/stores/progressStore';
-import { StoryEngine } from '@/core/engine/StoryEngine';
-import { GamePhase } from '@/core/engine/StateMachine';
-import { useMagicKeys } from '@vueuse/core';
-import VideoPlayer from '@/components/VideoPlayer.vue';
-import TypewriterText from '@/components/TypewriterText.vue';
-import ChoiceOverlay from '@/components/ChoiceOverlay.vue';
-import StatusPanel from '@/components/StatusPanel.vue';
-import HistoryTimeline from '@/components/HistoryTimeline.vue';
-import GameMenu from '@/components/GameMenu.vue';
-import { getCharacterConfig } from '@/data/configs/characters';
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useMagicKeys } from '@vueuse/core'
+  import type { Choice, InvestigationPoint, StoryNode } from '@/core/types/story'
+  import { GamePhase } from '@/core/engine/StateMachine'
+  import { StoryEngine } from '@/core/engine/StoryEngine'
+  import { getCharacterConfig } from '@/data/configs/characters'
+  import { getChapterById } from '@/data/chapters'
+  import { useGameStore } from '@/stores/gameStore'
+  import { useProgressStore } from '@/stores/progressStore'
+  import VideoPlayer from '@/components/VideoPlayer.vue'
+  import TypewriterText from '@/components/TypewriterText.vue'
+  import ChoiceOverlay from '@/components/ChoiceOverlay.vue'
+  import StatusPanel from '@/components/StatusPanel.vue'
+  import HistoryTimeline from '@/components/HistoryTimeline.vue'
+  import GameMenu from '@/components/GameMenu.vue'
 
+  type DisplayChoice = Choice & { showHiddenInfo?: boolean }
 
-const router = useRouter();
-const gameStore = useGameStore();
-const progressStore = useProgressStore();
+  const router = useRouter()
+  const gameStore = useGameStore()
+  const progressStore = useProgressStore()
+  const engine = new StoryEngine()
 
-// 引擎实例
-const engine = new StoryEngine();
-const { currentNode } = storeToRefs(engine);
-console.log(currentNode);
-// 引用
-const videoPlayer = ref<InstanceType<typeof VideoPlayer>>();
-const typewriter = ref<InstanceType<typeof TypewriterText>>();
+  const currentNode = computed(() => engine.currentNode.value)
+  const typewriter = ref<InstanceType<typeof TypewriterText>>()
+  const hideUiTimer = ref<number | null>(null)
 
-// UI状态
-const showMenu = ref(false);
-const showStatus = ref(false);
-const showHistory = ref(false);
-const hideUI = ref(false);
-const textComplete = ref(false);
-const showChoices = ref(false);
-const choiceTimer = ref(0);
-const showQTE = ref(false);
-const qteProgress = ref(100);
+  const showMenu = ref(false)
+  const showStatus = ref(false)
+  const showHistory = ref(false)
+  const hideUI = ref(false)
+  const textComplete = ref(false)
+  const showChoices = ref(false)
+  const choiceTimer = ref(0)
+  const showQTE = ref(false)
+  const qteProgress = ref(100)
 
-// 计算属性
-const currentChapter = computed(() => {
-  // 返回当前章节数据
-  return null;
-});
+  const currentChapter = computed(() => {
+    const chapterId = gameStore.currentChapter
+    return chapterId ? getChapterById(chapterId) : null
+  })
 
-const visibleDialogues = computed(() => {
-  if (!currentNode.value?.dialogue) return [];
-  return currentNode.value.dialogue.slice(0, gameStore.currentDialogueIndex + 1);
-});
+  const visibleDialogues = computed(() => {
+    if (!currentNode.value?.dialogue) return []
+    return currentNode.value.dialogue.slice(0, gameStore.currentDialogueIndex + 1)
+  })
 
-const currentSpeaker = computed(() => {
-  const dialogue = currentNode.value?.dialogue?.[gameStore.currentDialogueIndex];
-  return dialogue?.speaker || '';
-});
+  const currentSpeaker = computed(() => {
+    const dialogue = currentNode.value?.dialogue?.[gameStore.currentDialogueIndex]
+    return dialogue?.speaker ?? ''
+  })
 
-const currentText = computed(() => {
-  const dialogue = currentNode.value?.dialogue?.[gameStore.currentDialogueIndex];
-  return dialogue?.text || '';
-});
+  const currentText = computed(() => {
+    const dialogue = currentNode.value?.dialogue?.[gameStore.currentDialogueIndex]
+    return dialogue?.text ?? ''
+  })
 
-const availableChoices = computed(() => {
-  if (!currentNode.value?.choices) return [];
-  return currentNode.value.choices.filter(choice => {
-    if (!choice.conditions) return true;
-    return gameStore.checkConditions(choice.conditions);
-  }).map(choice => ({
-    ...choice,
-    showHiddenInfo: gameStore.canSeeHiddenInfo && !!choice.hiddenInfo
-  }));
-});
+  const availableChoices = computed<DisplayChoice[]>(() => {
+    if (!currentNode.value?.choices) return []
 
-const choiceTitle = computed(() => {
-  return '你的选择';
-});
+    return currentNode.value.choices
+      .filter(choice => !choice.conditions || gameStore.checkConditions(choice.conditions))
+      .map(choice => ({
+        ...choice,
+        showHiddenInfo: gameStore.canSeeHiddenInfo && !!choice.hiddenInfo
+      }))
+  })
 
-// 方法
-function getCharacterImage(speaker: string, emotion?: string): string {
-  const config = getCharacterConfig(speaker);
-  const emotionKey = emotion || config?.defaultEmotion || 'normal';
-  return config?.emotions[emotionKey]?.image || '/images/characters/default.png';
-}
+  const choiceTitle = computed(() => '你的选择')
 
-function getCharacterStyle(dialogue: any) {
-  return {
-    zIndex: dialogue.position === 'center' ? 10 : 5
-  };
-}
+  function syncCurrentNode(node: StoryNode) {
+    if (!gameStore.currentChapter) return
 
-function getSpeakerColor(speaker: string): string {
-  const config = getCharacterConfig(speaker);
-  return config?.color || '#fff';
-}
-
-function onDialogueClick() {
-  if (!textComplete.value) {
-    // 跳过打字机
-    typewriter.value?.skip();
-  } else {
-    // 下一句或自动跳转
-    nextDialogue();
+    gameStore.updateCurrentProgress(gameStore.currentChapter, node.id)
   }
-}
 
-function onTextComplete() {
-  textComplete.value = true;
-  if (gameStore.isSkipping) {
-    setTimeout(nextDialogue, 200);
-  }
-}
-
-function nextDialogue() {
-  const dialogues = currentNode.value?.dialogue;
-  if (!dialogues) return;
-
-  if (gameStore.currentDialogueIndex < dialogues.length - 1) {
-    gameStore.nextDialogue();
-    textComplete.value = false;
-  } else if (currentNode.value?.autoNext) {
-    engine.jumpTo(currentNode.value.autoNext.nodeId);
-    gameStore.resetDialogue();
-  } else if (currentNode.value?.choices) {
-    showChoices.value = true;
-    choiceTimer.value = Math.max(...currentNode.value.choices.map(c => c.deadline || 0));
-  }
-}
-
-function onChoiceSelect(choice: any) {
-  showChoices.value = false;
-  gameStore.applyEffects(choice.effects);
-  engine.makeChoice(choice);
-  gameStore.resetDialogue();
-
-  // 记录历史
-  gameStore.addHistory({
-    nodeId: currentNode.value!.id,
-    chapterId: gameStore.currentChapter,
-    choiceId: choice.id,
-    attributesSnapshot: { ...gameStore.attributes }
-  });
-}
-
-function onChoiceTimeout() {
-  // 超时处理
-  const defaultChoice = availableChoices.value[0];
-  if (defaultChoice) {
-    onChoiceSelect(defaultChoice);
-  }
-}
-
-function onVideoEnd() {
-  if (currentNode.value?.autoNext) {
-    engine.jumpTo(currentNode.value.autoNext.nodeId);
-  }
-}
-
-function onVideoPause(time: number) {
-  // 视频暂停点，显示选择
-  showChoices.value = true;
-}
-
-function skipVideo() {
-  if (currentNode.value?.autoNext) {
-    engine.jumpTo(currentNode.value.autoNext.nodeId);
-  }
-}
-
-function onInvestigate(point: any) {
-  gameStore.applyEffects(point.effects);
-  if (point.nextNodeId) {
-    engine.jumpTo(point.nextNodeId);
-  }
-}
-
-function onHistoryJump(index: number) {
-  // 回溯到指定历史点
-  engine.jumpToHistory(index);
-}
-
-function onMouseMove() {
-  hideUI.value = false;
-  // 3秒后隐藏UI
-  setTimeout(() => {
-    if (!showMenu.value && !showStatus.value && !showHistory.value) {
-      hideUI.value = true;
+  function loadCurrentChapter() {
+    const chapterId = gameStore.currentChapter
+    if (!chapterId) {
+      router.replace('/chapters')
+      return
     }
-  }, 3000);
-}
 
-// 键盘快捷键
-const { space, escape, arrowleft, KeyS } = useMagicKeys();
+    const chapter = getChapterById(chapterId)
+    if (!chapter) {
+      router.replace('/chapters')
+      return
+    }
 
-watch(space, (pressed) => {
-  if (pressed && gameStore.phase === GamePhase.DIALOGUE) {
-    onDialogueClick();
+    const startNodeId = gameStore.currentNode || chapter.startNodeId
+    const loaded = engine.loadChapter(chapter, startNodeId)
+    if (!loaded) {
+      router.replace('/chapters')
+    }
   }
-});
 
-watch(escape, (pressed) => {
-  if (pressed) showMenu.value = true;
-});
-
-watch(arrowleft, (pressed) => {
-  if (pressed) engine.goBack();
-});
-
-watch(KeyS, (pressed) => {
-  if (pressed && gameStore.phase === GamePhase.PLAYING) {
-    quickSave();
+  function getCharacterImage(speaker: string, emotion?: string): string {
+    const config = getCharacterConfig(speaker)
+    const emotionKey = emotion || config?.defaultEmotion || 'normal'
+    return config?.emotions[emotionKey]?.image ?? ''
   }
-});
 
-async function quickSave() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1920;
-  canvas.height = 1080;
-  const screenshot = canvas.toDataURL('image/jpeg', 0.7);
-  await progressStore.quickSave(screenshot);
-}
+  function getCharacterStyle(dialogue: { position?: string }) {
+    return {
+      zIndex: dialogue.position === 'center' ? 10 : 5
+    }
+  }
 
-// 引擎事件
-onMounted(() => {
-  // 加载章节
-  // engine.loadChapter(chapterData);
+  function getSpeakerColor(speaker: string): string {
+    const config = getCharacterConfig(speaker)
+    return config?.color || '#fff'
+  }
 
-  // 监听引擎事件
-  engine.onEffect((effect) => {
-    gameStore.applyEffect(effect);
-  });
+  function onDialogueClick() {
+    if (!textComplete.value) {
+      typewriter.value?.skip()
+      return
+    }
 
-  engine.onEnding((ending) => {
-    gameStore.unlockEnding(ending.id);
-    router.push('/ending');
-  });
+    nextDialogue()
+  }
 
-  // 启动自动存档
-  progressStore.startAutoSave();
-});
+  function onTextComplete() {
+    textComplete.value = true
+    if (gameStore.isSkipping) {
+      window.setTimeout(nextDialogue, 200)
+    }
+  }
 
-onUnmounted(() => {
-  engine.dispose();
-  progressStore.stopAutoSave();
-});
+  function nextDialogue() {
+    const node = currentNode.value
+    const dialogues = node?.dialogue
+    if (!node || !dialogues?.length) return
+
+    if (gameStore.currentDialogueIndex < dialogues.length - 1) {
+      gameStore.nextDialogue()
+      textComplete.value = false
+      return
+    }
+
+    if (node.choices?.length) {
+      showChoices.value = true
+      choiceTimer.value = Math.max(...node.choices.map(choice => choice.deadline || 0), 0)
+      return
+    }
+
+    if (node.autoNext) {
+      engine.jumpTo(node.autoNext.nodeId)
+      gameStore.resetDialogue()
+    }
+  }
+
+  function onChoiceSelect(choice: DisplayChoice) {
+    const currentNodeId = currentNode.value?.id
+
+    showChoices.value = false
+    gameStore.applyEffects(choice.effects)
+    engine.makeChoice(choice)
+    gameStore.resetDialogue()
+
+    if (!currentNodeId || !gameStore.currentChapter) return
+
+    gameStore.addHistory({
+      nodeId: currentNodeId,
+      chapterId: gameStore.currentChapter,
+      choiceId: choice.id,
+      attributesSnapshot: { ...gameStore.attributes },
+      flagsSnapshot: Array.from(gameStore.flags)
+    })
+  }
+
+  function onChoiceTimeout() {
+    const defaultChoice = availableChoices.value[0]
+    if (defaultChoice) {
+      onChoiceSelect(defaultChoice)
+    }
+  }
+
+  function onVideoEnd() {
+    if (currentNode.value?.autoNext) {
+      engine.jumpTo(currentNode.value.autoNext.nodeId)
+      gameStore.resetDialogue()
+    }
+  }
+
+  function onVideoPause() {
+    showChoices.value = availableChoices.value.length > 0
+  }
+
+  function skipVideo() {
+    if (currentNode.value?.autoNext) {
+      engine.jumpTo(currentNode.value.autoNext.nodeId)
+      gameStore.resetDialogue()
+    }
+  }
+
+  function onInvestigate(point: InvestigationPoint) {
+    gameStore.applyEffects(point.effects)
+    if (point.nextNodeId) {
+      engine.jumpTo(point.nextNodeId)
+    }
+  }
+
+  function onHistoryJump(index: number) {
+    engine.jumpToHistory(index)
+    gameStore.resetDialogue()
+  }
+
+  function onMouseMove() {
+    hideUI.value = false
+
+    if (hideUiTimer.value) {
+      clearTimeout(hideUiTimer.value)
+    }
+
+    hideUiTimer.value = window.setTimeout(() => {
+      if (!showMenu.value && !showStatus.value && !showHistory.value) {
+        hideUI.value = true
+      }
+    }, 3000)
+  }
+
+  const { space, escape, arrowleft, KeyS } = useMagicKeys()
+
+  watch(space, pressed => {
+    if (pressed && currentNode.value?.dialogue) {
+      onDialogueClick()
+    }
+  })
+
+  watch(escape, pressed => {
+    if (pressed) showMenu.value = true
+  })
+
+  watch(arrowleft, pressed => {
+    if (pressed && engine.goBack()) {
+      gameStore.resetDialogue()
+    }
+  })
+
+  watch(KeyS, pressed => {
+    if (pressed && gameStore.phase === GamePhase.PLAYING) {
+      quickSave()
+    }
+  })
+
+  watch(
+    () => currentNode.value?.id,
+    () => {
+      textComplete.value = false
+      showChoices.value = false
+      showQTE.value = currentNode.value?.type === 'qte'
+    }
+  )
+
+  async function quickSave() {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1920
+    canvas.height = 1080
+    const screenshot = canvas.toDataURL('image/jpeg', 0.7)
+    await progressStore.quickSave(screenshot)
+  }
+
+  onMounted(() => {
+    engine.onNodeChange(node => {
+      syncCurrentNode(node)
+      gameStore.setPhase(node.choices?.length ? GamePhase.CHOICE : GamePhase.DIALOGUE)
+    })
+
+    engine.onEffect(effect => {
+      gameStore.applyEffect(effect)
+    })
+
+    engine.onEnding(ending => {
+      if (ending?.id) {
+        gameStore.unlockEnding(ending.id)
+      }
+      router.push('/ending')
+    })
+
+    loadCurrentChapter()
+    progressStore.startAutoSave()
+  })
+
+  onUnmounted(() => {
+    if (hideUiTimer.value) {
+      clearTimeout(hideUiTimer.value)
+    }
+
+    engine.dispose()
+    progressStore.stopAutoSave()
+  })
 </script>
 
-<style scoped>
-.game-view {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  overflow: hidden;
-}
+<style scoped lang="scss">
+  .game-view {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+  }
 
-/* 层级 */
-.layer-background {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
+  .layer-background {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
 
-.bg-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+  .bg-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-.layer-characters {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
+  .layer-characters {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
 
-.character {
-  position: absolute;
-  bottom: 0;
-  transition: all 0.5s ease;
-  opacity: 0;
-  transform: translateY(20px);
-}
+  .character {
+    position: absolute;
+    bottom: 0;
+    transition: all 0.5s ease;
+    opacity: 0;
+    transform: translateY(20px);
+  }
 
-.character.left { left: 5%; }
-.character.right { right: 5%; }
-.character.center {
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-}
+  .character.left {
+    left: 5%;
+  }
 
-.character-enter-active,
-.character-leave-active {
-  transition: all 0.5s ease;
-}
+  .character.right {
+    right: 5%;
+  }
 
-.character-enter-from,
-.character-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
+  .character.center {
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+  }
 
-.character-enter-from.center,
-.character-leave-to.center {
-  opacity: 0;
-  transform: translateX(-50%) translateY(20px);
-}
+  .character-enter-active,
+  .character-leave-active {
+    transition: all 0.5s ease;
+  }
 
-.character-enter-to,
-.character-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
+  .character-enter-from,
+  .character-leave-to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 
-.character-enter-to.center,
-.character-leave-from.center {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+  .character-enter-from.center,
+  .character-leave-to.center {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
 
-.layer-effects {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-}
+  .character-enter-to,
+  .character-leave-from {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
-.layer-ui {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  transition: opacity 0.3s;
-}
+  .character-enter-to.center,
+  .character-leave-from.center {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 
-.hide-ui .layer-ui {
-  opacity: 0;
-  pointer-events: none;
-}
+  .layer-effects {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
 
-/* 顶部栏 */
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 40px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
-}
+  .layer-ui {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.3s;
+  }
 
-.left-group, .right-group {
-  display: flex;
-  gap: 16px;
-}
+  .hide-ui .layer-ui {
+    opacity: 0;
+    pointer-events: none;
+  }
 
-.icon-btn {
-  width: 40px;
-  height: 40px;
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
+  }
 
-.icon-btn:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.4);
-}
+  .left-group,
+  .right-group {
+    display: flex;
+    gap: 16px;
+  }
 
-.chapter-info {
-  color: rgba(255,255,255,0.8);
-  font-size: 14px;
-  letter-spacing: 2px;
-}
+  .icon-btn {
+    min-width: 72px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-/* 对话区域 */
-.dialogue-container {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 40px;
-  cursor: pointer;
-}
+  .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
 
-.dialogue-box {
-  width: 100%;
-  max-width: 1000px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9));
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 30px;
-  backdrop-filter: blur(10px);
-  position: relative;
-}
+  .chapter-info {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
 
-.speaker-name {
-  font-size: 20px;
-  font-weight: 500;
-  margin-bottom: 12px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
+  .dialogue-container {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 40px;
+    cursor: pointer;
+  }
 
-.dialogue-text {
-  color: rgba(255,255,255,0.95);
-  font-size: 20px;
-  line-height: 1.8;
-  min-height: 60px;
-}
+  .dialogue-box {
+    width: 100%;
+    max-width: 1000px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    position: relative;
+  }
 
-.continue-indicator {
-  position: absolute;
-  bottom: 20px;
-  right: 30px;
-  color: rgba(255,255,255,0.6);
-  font-size: 14px;
-  animation: bounce 1s infinite;
-}
+  .speaker-name {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
+  .dialogue-text {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 20px;
+    line-height: 1.8;
+    min-height: 60px;
+  }
 
-/* 调查模式 */
-.investigation-mode {
-  position: absolute;
-  inset: 0;
-  cursor: crosshair;
-}
+  .continue-indicator {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    animation: bounce 1s infinite;
+  }
 
-.investigation-point {
-  position: absolute;
-  cursor: pointer;
-}
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
 
-.point-marker {
-  width: 40px;
-  height: 40px;
-  border: 2px solid rgba(255,255,255,0.6);
-  border-radius: 50%;
-  animation: pulse-ring 2s infinite;
-}
+  .investigation-mode {
+    position: absolute;
+    inset: 0;
+    cursor: crosshair;
+  }
 
-@keyframes pulse-ring {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
+  .investigation-point {
+    position: absolute;
+    cursor: pointer;
+  }
 
-.point-tooltip {
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  background: rgba(0,0,0,0.8);
-  color: #fff;
-  font-size: 14px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
+  .point-marker {
+    width: 40px;
+    height: 40px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    animation: pulse-ring 2s infinite;
+  }
 
-.investigation-point:hover .point-tooltip {
-  opacity: 1;
-}
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
 
-/* QTE */
-.qte-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
+  .point-tooltip {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 14px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
 
-.qte-prompt {
-  text-align: center;
-}
+  .investigation-point:hover .point-tooltip {
+    opacity: 1;
+  }
 
-.qte-key {
-  display: block;
-  width: 100px;
-  height: 100px;
-  line-height: 100px;
-  background: rgba(231, 76, 60, 0.9);
-  border-radius: 12px;
-  color: #fff;
-  font-size: 48px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  box-shadow: 0 0 40px rgba(231, 76, 60, 0.5);
-  animation: qte-pulse 0.5s infinite;
-}
+  .qte-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
 
-@keyframes qte-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
+  .qte-prompt {
+    text-align: center;
+  }
 
-.qte-bar {
-  width: 200px;
-  height: 8px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 4px;
-  overflow: hidden;
-}
+  .qte-key {
+    display: block;
+    width: 100px;
+    height: 100px;
+    line-height: 100px;
+    background: rgba(231, 76, 60, 0.9);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 48px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    box-shadow: 0 0 40px rgba(231, 76, 60, 0.5);
+    animation: qte-pulse 0.5s infinite;
+  }
 
-.qte-progress {
-  height: 100%;
-  background: #e74c3c;
-  transition: width 0.1s linear;
-}
+  @keyframes qte-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  .qte-bar {
+    width: 200px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .qte-progress {
+    height: 100%;
+    background: #e74c3c;
+    transition: width 0.1s linear;
+  }
 </style>

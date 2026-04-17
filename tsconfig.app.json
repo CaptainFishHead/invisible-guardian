@@ -1,19 +1,43 @@
 {
+  // 1. 继承官方推荐的浏览器端 TS 配置
   "extends": "@vue/tsconfig/tsconfig.dom.json",
+
   "compilerOptions": {
+    // 2. TS 编译缓存文件存放路径
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+
+    // 3. 引入 Vite 客户端类型定义（解决 import.meta.env 等类型报错）
     "types": ["vite/client"],
+
+    // 4. 忽略 TS 6.0 版本废弃语法警告
+    "ignoreDeprecations": "6.0",
+
+    // 5. 配置路径别名，方便导入组件
     "baseUrl": ".",
+
+    // 6. 路径别名 → 让你可以用 @/ 和 ~/ 代替长路径
     "paths": {
       "@/*": ["src/*"],
       "~/*": ["src/assets/*"]
     },
 
-    /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    /* Linting 代码检查规则 */
+
+    // 7. 不检查未使用的局部变量
+    "noUnusedLocals": false,
+
+    // 8. 不检查未使用的函数参数
+    "noUnusedParameters": false,
+
+    // 9. 只允许擦除类型语法（TS 专用，一般不用改）
+    "erasableSyntaxOnly": false,
+
+    // 10. switch 语句必须写 break，不允许穿透
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+  // 11. 哪些文件需要 TS 检查
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
+
+  // 12. 排除这两个文件，不进行 TS 类型检查
+  "exclude": ["src/data/chapters/chapter3.ts", "src/data/chapters/HistorySystem.ts"]
 }

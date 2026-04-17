@@ -1,4 +1,4 @@
-# 生存游戏剧情Demo
+# 生存游戏剧情
 
 ## 项目介绍
 
@@ -21,44 +21,34 @@
 
 ## 整体架构图
 
-| 模块   | 文件数 | 核心功能                         |
-| :--- | :-- | :--------------------------- |
-| 类型定义 | 2   | 完整的TypeScript类型系统            |
-| 核心引擎 | 3   | 剧情推进、状态管理、存档系统               |
-| 状态管理 | 2   | Pinia Store（游戏状态、进度存档）       |
-| 通用组件 | 5   | 视频播放、分支选择、状态面板、历史回溯、打字机效果    |
-| 页面视图 | 7   | 主菜单、章节选择、游戏主界面、设置、画廊、结局、制作人员 |
-| 数据配置 | 4   | 角色配置、成就系统、章节剧本（2章示例）         |
-| 工程配置 | 3   | Vite、TypeScript、HTML入口       |
-
-
+![架构图](https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Fd1020197204143c0a284b88114dcac1b58662838e8d12d505f166c6ad0f42ce0?filename=image.png&sig=15OMDrwKYOkvlJqsY8pFauHLihFQZnfk14-R5ygbJVc=&t=o)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        表现层 (Presentation)                   │
+│                        表现层 (Presentation)                 │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
 │  │ 剧情播放  │  │ 分支选择  │  │ 属性面板  │  │ 历史回溯  │       │
-│  │  Scene   │  │ Branch   │  │  Status  │  │ Timeline │       │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+│  │  Scene   │  │ Branch   │  │  Status  │  │ Timeline │     │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
 │                        业务逻辑层 (Business Logic)            │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │ 剧情引擎      │  │ 存档管理      │  │ 状态机        │       │
+│  │ 剧情引擎       │  │ 存档管理      │  │ 状态机        │       │
 │  │ StoryEngine  │  │ SaveManager  │  │ StateMachine │       │
 │  └──────────────┘  └──────────────┘  └──────────────┘       │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│                        数据层 (Data Layer)                     │
+│                        数据层 (Data Layer)                   │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
 │  │ 剧本数据  │  │ 配置表    │  │ 存档数据  │  │ 资源管理  │       │
-│  │ Scripts  │  │ Configs  │  │  Saves   │  │ Assets   │       │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+│  │ Scripts  │  │ Configs  │  │  Saves   │  │ Assets   │     │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,45 +62,74 @@
 - HistoryTimeline.vue：历史时间轴，记录游戏历史事件。
 - TypewriterText.vue：打字机效果文本，用于显示剧情文本。
 
-## 项目页面
+| 模块     | 文件数 | 核心功能                                                 |
+| :------- | :----- | :------------------------------------------------------- |
+| 类型定义 | 2      | 完整的TypeScript类型系统                                 |
+| 核心引擎 | 3      | 剧情推进、状态管理、存档系统                             |
+| 状态管理 | 2      | Pinia Store（游戏状态、进度存档）                        |
+| 通用组件 | 5      | 视频播放、分支选择、状态面板、历史回溯、打字机效果       |
+| 页面视图 | 7      | 主菜单、章节选择、游戏主界面、设置、画廊、结局、制作人员 |
+| 数据配置 | 4      | 角色配置、成就系统、章节剧本（2章示例）                  |
+| 工程配置 | 3      | Vite、TypeScript、HTML入口                               |
 
 ## 项目结构
 
 ```
-src/
-├── assets/                    # 静态资源
-│   ├── videos/               # 剧情视频
-│   ├── images/               # 背景图、角色立绘
-│   └── audio/                # BGM、音效
-├── components/               # 通用组件
-│   ├── VideoPlayer.vue       # 视频播放器（含跳过、倍速）
-│   ├── ChoiceOverlay.vue     # 分支选择遮罩层
-│   ├── StatusPanel.vue       # 属性面板（好感度、情报值等）
-│   ├── HistoryTimeline.vue   # 历史时间轴
-│   └── TypewriterText.vue    # 打字机效果文本
-├── views/                    # 页面
-│   ├── GameView.vue          # 主游戏界面
-│   ├── ChapterSelect.vue     # 章节选择
-│   └── MainMenu.vue          # 主菜单
-├── core/                     # 核心引擎
-│   ├── engine/
-│   │   ├── StoryEngine.ts    # 剧情推进引擎
-│   │   ├── StateMachine.ts   # 游戏状态机
-│   │   └── SaveManager.ts    # 存档系统
-│   ├── types/
-│   │   ├── story.ts          # 类型定义
-│   │   └── game.ts           # 游戏状态类型
-│   └── utils/
-│       └── scriptParser.ts   # 剧本解析器
-├── data/                     # 剧本数据
-│   ├── chapters/             # 分章节剧本
-│   │   ├── chapter1.ts
-│   │   └── chapter2.ts
-│   └── configs/
-│       ├── characters.ts     # 角色配置
-│       └── achievements.ts   # 成就系统
-├── stores/                   # Pinia 状态管理
-│   ├── gameStore.ts          # 游戏运行时状态
-│   └── progressStore.ts      # 进度存档
-└── App.vue
+project-root/
+├── index.html                    # 入口HTML
+├── package.json                  # 依赖配置
+├── vite.config.ts                # Vite构建配置
+├── tsconfig.json                 #
+├── tsconfig.node.json            #
+├── public/                       # 静态资源
+│   ├── videos/                   # 剧情视频
+│   ├── images/                   # 背景图、角色立绘
+│   ├── audio/                    # BGM、音效
+│   └── vite.svg                  # 图标
+└── src/
+    ├── main.ts                   # 应用入口
+    ├── App.vue                   # 根组件
+    │
+    ├── components/               # 通用组件
+    │   ├── VideoPlayer.vue       # 视频播放器（含跳过、倍速）
+    │   ├── ChoiceOverlay.vue     # 分支选择遮罩层
+    │   ├── StatusPanel.vue       # 状态面板（好感度、情报值等）
+    │   ├── HistoryTimeline.vue   # 历史时间轴
+    │   └── TypewriterText.vue    # 打字机效果文本
+    │
+    ├── core/                     # 核心引擎
+    │   ├── engine/               # 核心引擎模块
+    │   │   ├── StoryEngine.ts    # 剧情推进引擎
+    │   │   ├── StateMachine.ts   # 状态管理
+    │   │   └── SaveManager.ts    # 存档系统
+    │   ├── types/                # 类型定义模块
+    │   │   ├── story.ts          # 类型定义
+    │   │   └── game.ts           # 游戏状态类型
+    │   └── utils/                # 工具函数模块
+    │       └── scriptParser.ts   # 剧本解析器
+    │
+    ├── data/                     # 游戏数据
+    │   ├── chapters/             # 分章节剧本
+    │   │   ├── chapter1.ts       # 第一章剧本
+    │   │   └── chapter2.ts       # 第二章剧本
+    │   └── configs/
+    │       ├── characters.ts     # 角色配置
+    │       └── achievements.ts   # 成就配置
+    │
+    ├── router/                   # 路由配置模块
+    │   └── index.ts              # 主路由配置
+    │
+    ├── stores/                   # Pinia 状态管理
+    │   ├── gameStore.ts          # 游戏运行时状态
+    │   └── progressStore.ts      # 进度存档
+    │
+    ├── views/                    # 页面视图
+    │   ├── ChapterSelect.vue     # 章节选择界面
+    │   └── CreditsView.vue       # 制作人员界面
+    │   └── EndingView.vue        # 结局界面
+    │   └── GalleryView.vue       # 画廊界面
+    │   ├── GameView.vue          # 游戏主界面
+    │   └── MainMenu.vue          # 主菜单界面
+    │   └── SettingsView.vue      # 设置界面
+    └──
 ```

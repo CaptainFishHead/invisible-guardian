@@ -39,8 +39,14 @@
   import { ref, computed, onMounted, onUnmounted } from 'vue'
   import type { Choice } from '@/core/types/story'
 
+  type ChoiceWithUi = Choice & {
+    showHiddenInfo?: boolean
+    disabled?: boolean
+    timerStyle?: Record<string, string | undefined>
+  }
+
   const props = defineProps<{
-    choices: Choice[]
+    choices: ChoiceWithUi[]
     title?: string
     globalTimer?: number // 全局倒计时（秒）
     defaultTimer?: number // 默认每个选项的倒计时
@@ -63,7 +69,7 @@
       return {
         ...choice,
         disabled: selectedIndex.value !== -1 || (hasTimer.value && isThisTimedOut),
-        showHiddenInfo: choice.hiddenInfo && (choice.showHiddenInfo || false),
+        showHiddenInfo: !!choice.hiddenInfo && !!choice.showHiddenInfo,
         timerStyle:
           timer > 0
             ? {
@@ -82,7 +88,7 @@
   })
 
   // 选择
-  function select(choice: Choice, index: number) {
+  function select(choice: ChoiceWithUi, index: number) {
     if (selectedIndex.value !== -1) return
 
     selectedIndex.value = index
