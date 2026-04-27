@@ -53,7 +53,7 @@ export class StateMachine {
       items: [],
       unlockedCGs: [],
       unlockedEndings: [],
-      unlockedChapters: ['ch1'], // 默认解锁第一章
+      unlockedChapters: ['ch1', 'ch2', 'ch3'], // 默认解锁第一章
       deathCount: 0,
       totalPlayTime: 0,
       currentChapterStartTime: 0,
@@ -67,6 +67,10 @@ export class StateMachine {
 
   // 阶段转换
   transition(to: GamePhase): boolean {
+    if (this.phase.value === to) {
+      return true;
+    }
+
     const validTransitions = this.getValidTransitions();
 
     if (!validTransitions.includes(to)) {

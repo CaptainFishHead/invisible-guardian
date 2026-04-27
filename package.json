@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "pinia": "^2.1.0",
     "vue": "^3.5.32",
+    "pinia": "^2.1.0",
     "vue-router": "^4.2.0",
     "@vueuse/core": "^14.2.1",
     "dexie": "^3.2.0",

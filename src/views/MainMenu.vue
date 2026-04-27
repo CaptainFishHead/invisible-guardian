@@ -91,12 +91,12 @@
       label: '设置',
       action: () => router.push('/settings')
     },
-    {
-      id: 'gallery',
-      label: '鉴赏模式',
-      disabled: gameStore.gameState.unlockedCGs.length === 0,
-      action: () => router.push('/gallery')
-    },
+    // {
+    //   id: 'gallery',
+    //   label: '鉴赏模式',
+    //   disabled: gameStore.gameState.unlockedCGs.length === 0,
+    //   action: () => router.push('/gallery')
+    // },
     {
       id: 'credits',
       label: '制作人员',

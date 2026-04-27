@@ -135,7 +135,7 @@ function close() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .timeline-overlay {
   position: fixed;
   inset: 0;

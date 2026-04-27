@@ -149,7 +149,7 @@ function close() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .status-panel-overlay {
   position: fixed;
   inset: 0;

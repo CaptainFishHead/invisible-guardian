@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
-
-
-
-
-
+import MainMenu from '@/views/MainMenu.vue'
+import ChapterSelect from '@/views/ChapterSelect.vue'
+import GameView from '@/views/GameView.vue'
+import SettingsView from '@/views/SettingsView.vue'
+import GalleryView from '@/views/GalleryView.vue'
+import CreditsView from '@/views/CreditsView.vue'
+import FlowchartView from '@/views/FlowchartView.vue'
+import EndingView from '@/views/EndingView.vue'
 
 
 const routes =
@@ -12,42 +14,42 @@ const routes =
     {
       path: '/',
       name: 'MainMenu',
-      component: () => import('@/views/MainMenu.vue')
+      component: MainMenu
     },
     {
       path: '/chapters',
       name: 'ChapterSelect',
-      component: () => import('@/views/ChapterSelect.vue')
+      component: ChapterSelect
     },
     {
       path: '/game',
       name: 'Game',
-      component: () => import('@/views/GameView.vue')
+      component: GameView
     },
     {
       path: '/settings',
       name: 'Settings',
-      component: () => import('@/views/SettingsView.vue')
+      component: SettingsView
     },
     {
       path: '/gallery',
       name: 'Gallery',
-      component: () => import('@/views/GalleryView.vue')
+      component: GalleryView
     },
     {
       path: '/credits',
       name: 'Credits',
-      component: () => import('@/views/CreditsView.vue')
+      component: CreditsView
     },
     {
       path: '/flowchart',
       name: 'Flowchart',
-      component: () => import('@/views/FlowchartView.vue')
+      component: FlowchartView
     },
     {
       path: '/ending',
       name: 'Ending',
-      component: () => import('@/views/EndingView.vue')
+      component: EndingView
     }
   ]
 

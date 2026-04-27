@@ -43,7 +43,7 @@ export const chapter1: Chapter = {
             text: '肖途？真的是你吗？'
           }
         ],
-        autoNext: { nodeId: 'ch1_choice', delay: 0.8 }
+        autoNext: { nodeId: 'ch1_choice', delay: 1 }
       }
     ],
     [
